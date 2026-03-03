@@ -1,0 +1,52 @@
+<html>
+
+<head>
+  <title>CivicPlus Internal Toolkit - Changelog</title>
+  <link rel="stylesheet" type="text/css" href="../css/external/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="../css/changelog.css" />
+  <link rel="stylesheet" type="text/css" href="../css/global.css" />
+  <link rel="stylesheet" type="text/css" href="../css/external/fontawesome-all.min.css" />
+  <style>
+    .tool-list {
+      margin: 10px 0 10px 20px;
+    }
+    .tool-list li {
+      margin: 4px 0;
+      color: #444;
+    }
+    .tool-category {
+      font-weight: 600;
+      color: #af282f;
+      margin-top: 15px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="top-banner">
+    <div id="main-title"><img src="../images/wordmark.png" alt="CivicPlus"></div>
+    <div id="sub-title"><i class="fas fa-wrench"></i>Internal Toolkit</div>
+  </div>
+  <div id="outerWrap">
+    <h1>Changelog</h1>
+    <hr>
+    <div id="message"></div>
+    <div id="version-list">
+      <div class="version v1.0">
+        <h4>Version 1.0</h4>
+        <h5>Initial Release</h5>
+        <div>Initial release of the CivicPlus Internal Toolkit (Manifest V3). Introduced the following tools:</div>
+        
+        <div class="tool-category">On-Load Tools (run automatically)</div>
+        <ul class="tool-list" id="on-load-tools-list"></ul>
+        
+        <div class="tool-category">On-Demand Tools (context menu)</div>
+        <ul class="tool-list" id="on-demand-tools-list"></ul>
+      </div>
+    </div>
+  </div>
+  <script src="../js/changelog.js"></script>
+</body>
+
+</html>
