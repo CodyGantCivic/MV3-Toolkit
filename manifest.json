@@ -1,6 +1,6 @@
 {
   "name": "CivicPlus Internal Toolkit",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "manifest_version": 3,
   "description": "Tools for use by employees at CivicPlus.",
   "icons": {
@@ -48,7 +48,8 @@
         "js/tools/on-load/download-xml-css.js",
         "js/tools/on-load/cp-ImportFancyButton.js",
         "js/tools/on-load/remember-image-picker-state.js",
-        "js/tools/on-load/fix-copied-skin-references.js"
+        "js/tools/on-load/fix-copied-skin-references.js",
+        "js/tools/on-load/adfs.js"
       ],
       "run_at": "document_start"
     }
@@ -59,7 +60,8 @@
     "downloads",
     "contextMenus",
     "scripting",
-    "alarms"
+    "alarms",
+    "webNavigation"
   ],
   "host_permissions": [
     "*://*/*"
@@ -71,6 +73,7 @@
         "images/*",
         "js/tools/on-demand/*",
         "js/tools/on-load/helpers/*",
+        "socials/*",
         "css/external/fontawesome-all.min.css",
         "css/external/fontawesome-fonts/*"
       ],

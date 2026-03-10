@@ -113,10 +113,14 @@ async function initializeContextMenus(forceRecreate = false) {
     const toolDefinitions = await response.json();
     const toolNames = Object.keys(toolDefinitions);
 
+    // Load disabled on-demand tools list
+    const disabledResult = await chrome.storage.local.get('cp-toolkit-disabled-od-tools');
+    const disabledTools = disabledResult['cp-toolkit-disabled-od-tools'] || {};
+
     // Build tool metadata array
     const tools = toolNames.map((toolName) => {
       const toolDef = toolDefinitions[toolName];
-      
+
       return {
         name: toolName,
         file: toolDef.file,
@@ -131,8 +135,14 @@ async function initializeContextMenus(forceRecreate = false) {
 
     // Create context menu items for each tool
     tools.forEach(tool => {
-      // Store metadata in memory cache
+      // Store metadata in memory cache (even if disabled, for help lookups)
       loadedTools[tool.name] = tool;
+
+      // Skip disabled tools
+      if (disabledTools[tool.name]) {
+        console.log(`[CP Toolkit] Skipping disabled tool: "${tool.name}"`);
+        return;
+      }
 
       // Executable menu item
       try {

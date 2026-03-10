@@ -1,15 +1,18 @@
-// Options page JavaScript - Dynamically loads tools from on-load-tools.json
+// Options page JavaScript - Dynamically loads tools from on-load-tools.json and on-demand-tools.json
 
 let toolsData = {};
+let onDemandToolsData = {};
 
 // Load tools data and settings
 async function initialize() {
   try {
-    // Load the tools configuration
-    const response = await fetch(
-      chrome.runtime.getURL("data/on-load-tools.json"),
-    );
-    toolsData = await response.json();
+    // Load both tool configurations in parallel
+    const [onLoadResponse, onDemandResponse] = await Promise.all([
+      fetch(chrome.runtime.getURL("data/on-load-tools.json")),
+      fetch(chrome.runtime.getURL("data/on-demand-tools.json")),
+    ]);
+    toolsData = await onLoadResponse.json();
+    onDemandToolsData = await onDemandResponse.json();
 
     // Add mini-ide if not present (it's a special case)
     if (!toolsData["mini-ide"]) {
@@ -26,9 +29,11 @@ async function initialize() {
 
     // Generate the UI
     generateToolsUI();
+    generateOnDemandToolsUI();
 
     // Load current settings
     loadSettings();
+    loadOnDemandSettings();
   } catch (error) {
     console.error("Failed to load tools configuration:", error);
     document.getElementById("tools-container").innerHTML =
@@ -177,6 +182,116 @@ function saveSettings() {
     setTimeout(() => {
       status.style.display = "none";
     }, 2000);
+  });
+}
+
+// ==================== ON-DEMAND TOOLS ====================
+
+// Generate on-demand tools UI
+function generateOnDemandToolsUI() {
+  const container = document.getElementById("tools-container");
+  const toolNames = Object.keys(onDemandToolsData).sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  if (toolNames.length === 0) return;
+
+  const section = document.createElement("div");
+  section.className = "section";
+
+  const heading = document.createElement("h2");
+  heading.textContent = "On-Demand Tools (Context Menu)";
+  section.appendChild(heading);
+
+  const note = document.createElement("div");
+  note.className = "description";
+  note.style.cssText =
+    "margin: 0 0 16px 0; padding: 10px 14px; background: #f0f0f0; border-radius: 4px; font-size: 13px; color: #555;";
+  note.textContent =
+    "These tools are accessible via right-click context menu on matching pages. Disabled tools will be hidden from the context menu.";
+  section.appendChild(note);
+
+  for (const toolName of toolNames) {
+    const tool = onDemandToolsData[toolName];
+
+    const toolOption = document.createElement("div");
+    toolOption.className = "tool-option";
+
+    const label = document.createElement("label");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "od-" + toolName;
+    checkbox.checked = true; // default enabled
+    checkbox.addEventListener("change", () => saveOnDemandSetting(toolName, checkbox.checked));
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "tool-name";
+    nameSpan.textContent = toolName;
+
+    label.appendChild(checkbox);
+    label.appendChild(nameSpan);
+
+    const description = document.createElement("div");
+    description.className = "description";
+    description.textContent = tool.help || "";
+
+    toolOption.appendChild(label);
+    toolOption.appendChild(description);
+
+    if (tool.helpPages) {
+      const pages = document.createElement("div");
+      pages.className = "description";
+      pages.style.cssText = "font-size: 11px; color: #888; margin-top: 2px;";
+      pages.textContent = "Available on: " + tool.helpPages;
+      toolOption.appendChild(pages);
+    }
+
+    section.appendChild(toolOption);
+  }
+
+  container.appendChild(section);
+}
+
+// Load on-demand tool settings from storage
+function loadOnDemandSettings() {
+  chrome.storage.local.get("cp-toolkit-disabled-od-tools", (result) => {
+    const disabled = result["cp-toolkit-disabled-od-tools"] || {};
+
+    for (const toolName of Object.keys(onDemandToolsData)) {
+      const checkbox = document.getElementById("od-" + toolName);
+      if (checkbox) {
+        checkbox.checked = !disabled[toolName];
+      }
+    }
+  });
+}
+
+// Save a single on-demand tool setting and rebuild context menus
+function saveOnDemandSetting(toolName, enabled) {
+  chrome.storage.local.get("cp-toolkit-disabled-od-tools", (result) => {
+    const disabled = result["cp-toolkit-disabled-od-tools"] || {};
+
+    if (enabled) {
+      delete disabled[toolName];
+    } else {
+      disabled[toolName] = true;
+    }
+
+    chrome.storage.local.set(
+      { "cp-toolkit-disabled-od-tools": disabled },
+      () => {
+        // Rebuild context menus so changes take effect immediately
+        chrome.runtime.sendMessage({ action: "cp-rebuild-context-menus" });
+
+        // Show status
+        const status = document.getElementById("status");
+        status.style.display = "block";
+        setTimeout(() => {
+          status.style.display = "none";
+        }, 2000);
+      },
+    );
   });
 }
 

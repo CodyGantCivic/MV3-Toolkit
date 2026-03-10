@@ -76,7 +76,7 @@
               // Only add checkbox if it doesn't already exist
               if (!$("#enableQuickLinkAutochange").length) {
                 var enableQuickLinkCheckbox = $(
-                  '<label class="check" for="enableQuickLinkAutochange"><input type="checkbox" name="ysnNewWindow" id="enableQuickLinkAutochange">[CP Toolkit] Enable quick link autochanger</label><div style="color: red;" id="quickLinkChangeWarn"></div><br>'
+                  '<label class="check" for="enableQuickLinkAutochange"><input type="checkbox" id="enableQuickLinkAutochange">[CP Toolkit] Enable quick link autochanger</label><div style="color: red;" id="quickLinkChangeWarn"></div><br>'
                 );
 
                 // Find the form container and prepend

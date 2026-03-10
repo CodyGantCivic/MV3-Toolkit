@@ -43,6 +43,12 @@
     "help": "You can use this tool to copy the Secondary Navigation styles to the rest of the secondary navigation.",
     "helpPages": "Theme Manager"
   },
+  "Copy multiple skins": {
+    "file": "copy-multiple-skins.js",
+    "urlPatterns": ["*://*/DesignCenter/Themes/*"],
+    "help": "Apply multiple saved skins from your library to the current site at once. Each saved skin can be mapped to an existing skin or create a new one. Auto-match by name for fast setup.",
+    "helpPages": "Theme Manager"
+  },
   "Copy widget skin component(s) to another widget skin": {
     "file": "copy-widget-skin-components.js",
     "urlPatterns": ["*://*/DesignCenter/Themes/*"],

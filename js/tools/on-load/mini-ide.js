@@ -395,6 +395,10 @@
             .css-code-popup.visible {
                 display: block;
             }
+            .css-code-popup:empty,
+            .css-code-popup.visible:not(:has(li)) {
+                display: none;
+            }
             /* Simple dropdown list */
             .css-snippet-dropdown-list {
                 list-style: none;
@@ -3887,9 +3891,11 @@
             }
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
     }
-    
+
     // Fallback listener if jQuery method doesn't work
     function addInsertButtonListener(insertBtn, getSelectorFn) {
         insertBtn.addEventListener('click', function(e) {
@@ -3981,9 +3987,11 @@
             }
         });
         
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
     }
-    
+
     // ==================== SETUP TAB CHANGE LISTENER ====================
     function setupTabChangeListener() {
         // Listen for dropdown changes in fancy button modal
@@ -4198,7 +4206,9 @@
             }, 300); // Wait 300ms after last change
         });
 
-        observer.observe(document.body, { childList: true, subtree: true });
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
         // console.log(TOOLKIT_NAME + ' Mutation observer started'); // Phase 3: Reduced logging
 
         // Watch for tab panels becoming visible

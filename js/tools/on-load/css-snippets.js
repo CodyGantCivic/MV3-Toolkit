@@ -240,79 +240,34 @@
             });
         }
 
+        // ==================== GENERIC STORAGE BRIDGE ====================
+        // Allows on-demand tools (MAIN world) to get/set chrome.storage.local
+        // via CustomEvents. Tools in MAIN world can't access chrome APIs directly.
+
+        document.addEventListener('cp-toolkit-storage-get', function(e) {
+            var detail = e.detail || {};
+            if (!chrome.runtime?.id) return;
+            chrome.storage.local.get(detail.key, function(result) {
+                document.dispatchEvent(new CustomEvent('cp-toolkit-storage-response', {
+                    detail: { requestId: detail.requestId, data: result[detail.key] }
+                }));
+            });
+        });
+
+        document.addEventListener('cp-toolkit-storage-set', function(e) {
+            var detail = e.detail || {};
+            if (!chrome.runtime?.id) return;
+            var obj = {};
+            obj[detail.key] = detail.value;
+            chrome.storage.local.set(obj, function() {
+                document.dispatchEvent(new CustomEvent('cp-toolkit-storage-response', {
+                    detail: { requestId: detail.requestId, success: true }
+                }));
+            });
+        });
+
         // ==================== SIMPLE DROPDOWN SNIPPETS ====================
         // These snippets use dynamic selector replacement
-
-        const QUICK_SNIPPETS = [
-            {
-                name: 'After Element / Center on Mobile',
-                // Uses {{FULL_SELECTOR}} which is computed based on context
-                // Template closes parent selector after position:relative, then opens new selectors
-                // No closing } at end - CMS provides closing bracket for textarea
-                template: `position: relative;
-}
-
-{{FULL_SELECTOR}}::after {
-    position: absolute;
-    content: "";
-    width: 74px;
-    height: 3px;
-    bottom: -7px;
-    left: 0;
-    background: #FED318;
-}
-
-{{MOBILE_RULE}}::after {
-    left: 50%;
-    transform: translateX(-50%);`
-            },
-            {
-                name: 'Media Query',
-                // Closes parent selector, opens media query with full selector inside
-                // No closing } for media query - CMS provides that
-                template: `}
-
-@media(max-width:1400px){
-{{FULL_SELECTOR}}{
-
-}`
-            },
-            {
-                name: 'Feature Column Border',
-                // Only shows in #featureColumn context
-                contexts: ['featureColumn'],
-                template: `}
-
-@media (min-width: 63em) {
-    #featureColumn {
-        border-left: 1px solid #E4E4E4;
-        margin: 1.5em 0;
-    }`
-            },
-            {
-                name: 'Fancy Button After Element',
-                // Only shows in fancy button context
-                contexts: ['fancyButton'],
-                template: `position: relative;
-}
-
-{{FULL_SELECTOR}}::after {
-    position: absolute;
-    content: "";
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 0;
-    width: 30px;
-    height: 4px;
-    background: #FFF;
-    border-radius: 4px;
-    transition: all .3s ease-in-out;
-}
-
-{{HOVER_SELECTOR}}::after {
-    width: 50px;`
-            }
-        ];
 
         // Find the selector element near the textarea
         // Could be #ExternalIDStyle, p.cpExpandCollapseControl, or a plain <p> with selector
@@ -549,11 +504,11 @@
             'mega-menu-bullets': ['megaMenu'],
             'mega-menu-border-radius': ['megaMenu'],
             'mega-menu-border': ['megaMenu'],
-            'carousel-basics': ['carousel'],
-            'carousel-height-matched': ['carousel'],
+            'carousel-basics': ['news'],
+            'carousel-height-matched': ['news'],
             'slideshow-basics': ['slideshow'],
             'footer-lines': ['footer'],
-            'popular-links': ['popularLinks'],
+            'popular-links': ['links'],
             'flex-calendar': ['calendar'],
             'socials': ['socials']
         };
@@ -575,18 +530,21 @@
             'nav items': ['nav'],
             'mega menu': ['megaMenu'],
             'megamenu': ['megaMenu'],
-            // Carousel/Slideshow categories
-            'carousels': ['carousel', 'slideshow'],
-            'carousel': ['carousel'],
+            // News/Carousel/Slideshow categories
+            'news': ['news'],
+            'carousels': ['news', 'slideshow'],
+            'carousel': ['news'],
             'slideshow': ['slideshow'],
             'slideshows': ['slideshow'],
             // Footer categories
             'footer': ['footer'],
             'footers': ['footer'],
             // Links categories
-            'links': ['popularLinks'],
-            'popular links': ['popularLinks'],
-            'popularlinks': ['popularLinks'],
+            'links': ['links'],
+            'link': ['links'],
+            'popular links': ['links'],
+            'popularlinks': ['links'],
+            'popular resources': ['links'],
             // Calendar categories
             'calendar': ['calendar'],
             'calendars': ['calendar'],
@@ -595,23 +553,27 @@
             'socials': ['socials'],
             'social media': ['socials'],
             // Headers category
-            'headers': ['skin']
+            'headers': ['headers'],
+            'header': ['headers'],
+            // Feature column
+            'feature column': ['featureColumn'],
+            'featurecolumn': ['featureColumn']
             // Note: 'layout' and 'custom' are NOT mapped - they won't show in context lists
         };
 
         // Predefined categories for the snippet modal dropdown
         // These are the categories users can select when creating snippets
         const SNIPPET_CATEGORIES = [
-            { value: 'Buttons', label: 'Buttons', description: 'Fancy button snippets' },
-            { value: 'Carousel', label: 'Carousel', description: 'Carousel snippets' },
-            { value: 'Slideshow', label: 'Slideshow', description: 'Slideshow snippets' },
-            { value: 'Mega Menu', label: 'Mega Menu', description: 'Mega menu snippets' },
-            { value: 'Nav Items', label: 'Nav Items', description: 'Navigation snippets' },
-            { value: 'Footer', label: 'Footer', description: 'Footer snippets' },
-            { value: 'Links', label: 'Links', description: 'Popular links snippets' },
-            { value: 'Calendar', label: 'Calendar', description: 'Calendar snippets' },
-            { value: 'Socials', label: 'Socials', description: 'Social media snippets' },
-            { value: 'Headers', label: 'Headers', description: 'Widget header snippets' },
+            { value: 'Buttons', label: 'Buttons', description: 'Shows in Fancy Button Builder' },
+            { value: 'News', label: 'News', description: 'Skins with "news" or "carousel" in name' },
+            { value: 'Slideshow', label: 'Slideshow', description: 'Skins with "slideshow" in name' },
+            { value: 'Mega Menu', label: 'Mega Menu', description: 'Skins with "mega menu" in name' },
+            { value: 'Nav Items', label: 'Nav Items', description: 'Navigation menu style editor' },
+            { value: 'Footer', label: 'Footer', description: 'Skins with "footer" in name' },
+            { value: 'Links', label: 'Links', description: 'Skins with "link", "links", or "popular resources" in name' },
+            { value: 'Calendar', label: 'Calendar', description: 'Skins with "calendar" in name or calendar component' },
+            { value: 'Socials', label: 'Socials', description: 'Skins with "social media" or "socials" in name' },
+            { value: 'Headers', label: 'Headers', description: 'Skins with "header" or "headers" in name' },
             { value: 'Custom', label: 'Custom', description: 'Custom category (won\'t appear in context lists)' }
         ];
 
@@ -620,7 +582,7 @@
             const cat = (category || '').toLowerCase();
             const icons = {
                 'buttons':   '<path d="M21 3H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path><line x1="9" y1="7" x2="15" y2="7"></line>',
-                'carousel':  '<circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon>',
+                'news':      '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path><line x1="10" y1="6" x2="18" y2="6"></line><line x1="10" y1="10" x2="18" y2="10"></line><line x1="10" y1="14" x2="14" y2="14"></line>',
                 'slideshow': '<rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line>',
                 'mega menu': '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>',
                 'nav items': '<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>',
@@ -655,6 +617,16 @@
         // Detect active context types based on current modal/section
         function getActiveContextTypes(textarea) {
             const contexts = [];
+
+            // Check for fancy button context — textarea ID contains FancyButton or selector contains .fancyButton
+            if (textarea && textarea.id && /fancybutton/i.test(textarea.id)) {
+                contexts.push('fancyButton');
+            } else {
+                const selectorEl = findSelectorElement(textarea.closest('li.noLabel') || textarea.closest('div'));
+                if (selectorEl && selectorEl.textContent.toLowerCase().includes('.fancybutton')) {
+                    contexts.push('fancyButton');
+                }
+            }
 
             // Check for nav modal - must have #MenuStyleName select
             const menuStyleSelect = document.querySelector('.cpPopOver #MenuStyleName');
@@ -697,8 +669,8 @@
                     if (skinName.includes('mega menu') || skinName.includes('megamenu')) {
                         contexts.push('megaMenu');
                     }
-                    if (skinName.includes('carousel')) {
-                        contexts.push('carousel');
+                    if (skinName.includes('news') || skinName.includes('carousel')) {
+                        contexts.push('news');
                     }
                     if (skinName.includes('slideshow')) {
                         contexts.push('slideshow');
@@ -706,11 +678,17 @@
                     if (skinName.includes('footer')) {
                         contexts.push('footer');
                     }
-                    if (skinName.includes('popular links') || skinName.includes('popularlinks')) {
-                        contexts.push('popularLinks');
+                    if (skinName.includes('link') || skinName.includes('popular resources')) {
+                        contexts.push('links');
                     }
                     if (skinName.includes('social media') || skinName.includes('socials')) {
                         contexts.push('socials');
+                    }
+                    if (skinName.includes('calendar')) {
+                        contexts.push('calendar');
+                    }
+                    if (skinName.includes('header')) {
+                        contexts.push('headers');
                     }
                 }
 
@@ -772,8 +750,9 @@
                     let matches = false;
 
                     if (snippet.isUserSnippet) {
-                        // User snippets: match by category
-                        matches = categoryMatchesContext(snippet.category, activeContexts);
+                        // User snippets: match by category or name
+                        matches = categoryMatchesContext(snippet.category, activeContexts) ||
+                                  categoryMatchesContext(snippet.name, activeContexts);
                     } else {
                         // Built-in snippets: match by key (using KEY_TO_CONTEXT_MAP)
                         matches = keyMatchesContext(key, activeContexts);
@@ -794,20 +773,6 @@
         async function buildDropdownHTML(textarea) {
             let html = '<ul class="css-snippet-dropdown-list">';
 
-            // Detect current context type for filtering context-specific snippets
-            const currentContext = getContextInfo(textarea);
-
-            // Add quick snippets first (filtered by context if applicable)
-            QUICK_SNIPPETS.forEach((snippet, index) => {
-                // If snippet has contexts array, only show if current context matches
-                if (snippet.contexts && snippet.contexts.length > 0) {
-                    if (!snippet.contexts.includes(currentContext.type)) {
-                        return; // Skip this snippet - context doesn't match
-                    }
-                }
-                html += `<li data-snippet-index="${index}">${snippet.name}</li>`;
-            });
-
             // Add user snippets with dynamicSelector AND alwaysInQuickList to the quick list
             const userSnippets = await loadUserSnippets();
             const alwaysShowSnippets = Object.entries(userSnippets).filter(([key, snippet]) =>
@@ -819,7 +784,7 @@
 
             if (alwaysShowSnippets.length > 0) {
                 alwaysShowSnippets.forEach(([key, snippet]) => {
-                    html += `<li data-library-key="${key}" data-dynamic="true">${snippet.name} <span class="user-badge">User</span></li>`;
+                    html += `<li data-library-key="${key}" data-dynamic="true">${snippet.name}</li>`;
                 });
             }
 
@@ -830,13 +795,14 @@
             const filteredContextSnippets = contextSnippets.filter(snippet => !alwaysShowKeys.has(snippet.key));
 
             if (filteredContextSnippets.length > 0) {
-                // Add separator
-                html += '<li class="snippet-separator"></li>';
+                // Add separator only if there are items above
+                if (alwaysShowSnippets.length > 0) {
+                    html += '<li class="snippet-separator"></li>';
+                }
 
                 // Add context-aware snippets from library (includes user snippets with matching category)
                 filteredContextSnippets.forEach(snippet => {
-                    const userBadge = snippet.isUserSnippet ? ' <span class="user-badge">User</span>' : '';
-                    html += `<li data-library-key="${snippet.key}">${snippet.name}${userBadge}</li>`;
+                    html += `<li data-library-key="${snippet.key}">${snippet.name}</li>`;
                 });
             }
 
@@ -931,6 +897,9 @@
                 <div class="snippets-sidebar-header">
                     <img src="${getLogoUrl()}" alt="CivicPlus" class="snippets-logo">
                     <span class="snippets-title">CSS Snippets</span>
+                    <button class="snippets-sidebar-fullscreen" title="Open full page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-7 7"></path><path d="M3 21l7-7"></path></svg>
+                    </button>
                     <button class="snippets-sidebar-close" title="Close">&times;</button>
                 </div>
                 <div class="snippets-sidebar-actions">
@@ -991,6 +960,10 @@
                 }
                 #cp-toolkit-snippets-sidebar button {
                     line-height: normal;
+                    width: auto;
+                    height: auto;
+                    min-width: 0;
+                    box-sizing: border-box;
                 }
                 #cp-toolkit-snippets-sidebar svg {
                     fill: none;
@@ -999,7 +972,7 @@
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 12px;
+                    gap: 0;
                     padding: 16px 20px;
                     background: linear-gradient(135deg, #af282f 0%, #8a1f24 100%);
                     color: #fff;
@@ -1016,20 +989,35 @@
                     font-weight: 500;
                     opacity: 0.9;
                 }
-                .snippets-sidebar-close {
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-close,
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-fullscreen {
                     background: none;
                     border: none;
                     color: #fff;
-                    font-size: 28px;
                     cursor: pointer;
                     padding: 0;
                     line-height: 1;
                     position: absolute;
                     opacity: 0.8;
                     transition: opacity 0.2s;
-                    right: 20px;
+                    width: auto;
+                    height: auto;
                 }
-                .snippets-sidebar-close:hover {
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-close {
+                    font-size: 28px;
+                    right: 10px;
+                    top: 10px;
+                    height: 28px;
+                    width: 28px;
+                }
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-fullscreen {
+                    left: 10px;
+                    top: 10px;
+                    width: 28px;
+                    height: 28px;
+                }
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-close:hover,
+                #cp-toolkit-snippets-sidebar .snippets-sidebar-fullscreen:hover {
                     opacity: 1;
                 }
                 .snippets-sidebar-search {
@@ -1267,13 +1255,31 @@
                     font-size: 13px;
                     font-weight: 600;
                     color: #1565c0;
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .copied-skins-header:hover {
+                    background: #bbdefb;
+                }
+                .copied-skins-chevron {
+                    transition: transform 0.2s;
+                    flex-shrink: 0;
+                    margin-left: 8px;
+                }
+                .copied-skins-section.collapsed .copied-skins-chevron {
+                    transform: rotate(-90deg);
+                }
+                .copied-skins-section.collapsed .copied-skin-item {
+                    display: none !important;
                 }
                 .copied-skins-count {
                     background: #1976d2;
                     color: #fff;
                     padding: 2px 8px;
-                    border-radius: 10px;
+                    margin: 0 auto;
+                    margin-right: 0;
                     font-size: 11px;
+                    border-radius: 20px;
                 }
                 .copied-skin-item {
                     border-bottom: 1px solid #e0e0e0;
@@ -1305,6 +1311,16 @@
                     color: #666;
                     margin-top: 4px;
                     margin-left: 50px;
+                }
+                .copied-skin-source-link {
+                    color: #1976d2;
+                    text-decoration: none;
+                    font-size: 11px;
+                    font-weight: 500;
+                    margin-left: 6px;
+                }
+                .copied-skin-source-link:hover {
+                    text-decoration: underline;
                 }
                 .copied-skin-delete-btn {
                     display: inline-flex;
@@ -1368,8 +1384,8 @@
                     color: #795548;
                 }
                 /* Edit/Delete buttons */
-                .snippet-edit-btn,
-                .snippet-delete-btn {
+                #cp-toolkit-snippets-sidebar .snippet-edit-btn,
+                #cp-toolkit-snippets-sidebar .snippet-delete-btn {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
@@ -1383,18 +1399,18 @@
                     transition: all 0.2s;
                     margin-left: 8px;
                 }
-                .snippet-edit-btn:hover {
+                #cp-toolkit-snippets-sidebar .snippet-edit-btn:hover {
                     background: #e3f2fd;
                     border-color: #2196f3;
                     color: #1976d2;
                 }
-                .snippet-delete-btn:hover {
+                #cp-toolkit-snippets-sidebar .snippet-delete-btn:hover {
                     background: #ffebee;
                     border-color: #f44336;
                     color: #c62828;
                 }
-                .snippet-edit-btn svg,
-                .snippet-delete-btn svg {
+                #cp-toolkit-snippets-sidebar .snippet-edit-btn svg,
+                #cp-toolkit-snippets-sidebar .snippet-delete-btn svg {
                     width: 14px;
                     height: 14px;
                 }
@@ -1465,6 +1481,29 @@
                 .snippet-header-delete-btn svg {
                     width: 13px;
                     height: 13px;
+                }
+                /* Delete All button */
+                .snippets-delete-all {
+                    display: none;
+                    width: calc(100% - 40px);
+                    margin: 16px 20px;
+                    padding: 10px 20px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    background: #fff;
+                    color: #c41c27;
+                    font-size: 13px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .edit-mode .snippets-delete-all {
+                    display: block;
+                }
+                .snippets-delete-all:hover {
+                    background: #c41c27;
+                    color: #fff;
+                    border-color: #c41c27;
                 }
                 /* Drag states */
                 .snippet-item.dragging {
@@ -1645,16 +1684,19 @@
             snippetOrder = snippetOrder || [];
             const skinEntries = Object.entries(copiedSkins);
             if (skinEntries.length > 0) {
-                html += '<div class="copied-skins-section">';
+                html += '<div class="copied-skins-section collapsed">';
                 html += '<div class="copied-skins-header">';
                 html += '<span>Copied Skins</span>';
                 html += '<span class="copied-skins-count">' + skinEntries.length + '</span>';
+                html += '<svg class="copied-skins-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
                 html += '</div>';
 
                 for (const [key, skin] of skinEntries) {
                     const savedDate = skin.savedAt ? new Date(skin.savedAt).toLocaleDateString() : '';
                     const sourceInfo = skin.sourceSkinName ? 'from ' + skin.sourceSkinName + ' (ID: ' + skin.sourceSkinID + ')' : '';
                     const componentCount = skin.components ? skin.components.length : 0;
+
+                    const sourceLink = skin.sourceUrl ? ` <a href="${skin.sourceUrl}" target="_blank" class="copied-skin-source-link" title="${skin.sourceUrl}">Source</a>` : '';
 
                     html += `
                         <div class="copied-skin-item" data-skin-key="${key}">
@@ -1669,7 +1711,7 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div class="copied-skin-source">${sourceInfo}${sourceInfo && componentCount ? ' \u2022 ' : ''}${componentCount} component(s)</div>
+                            <div class="copied-skin-source">${sourceInfo}${sourceInfo && componentCount ? ' \u2022 ' : ''}${componentCount} component(s)${sourceLink}</div>
                         </div>
                     `;
                 }
@@ -1757,6 +1799,9 @@
                     </div>
                 `;
             }
+
+            // Delete All button (only visible in edit mode)
+            html += '<button class="snippets-delete-all" title="Delete all user snippets and copied skins">Delete All User Data</button>';
 
             return html;
         }
@@ -1899,18 +1944,12 @@
                             </div>
                         </div>
 
-                        <div class="snippet-modal-field snippet-quick-list-option" style="display: ${hasDynamicSelector ? 'block' : 'none'};">
-                            <label>Quick List Display</label>
-                            <div class="snippet-radio-group">
-                                <label class="snippet-radio-label">
-                                    <input type="radio" name="snippet-quick-list" value="always" ${existingSnippet?.alwaysInQuickList ? 'checked' : ''} />
-                                    <span>Always show in quick list</span>
-                                </label>
-                                <label class="snippet-radio-label">
-                                    <input type="radio" name="snippet-quick-list" value="category" ${!existingSnippet?.alwaysInQuickList ? 'checked' : ''} />
-                                    <span>Only show for matching category</span>
-                                </label>
-                            </div>
+                        <div class="snippet-modal-field snippet-advanced-toggle">
+                            <label class="snippet-checkbox-label">
+                                <input type="checkbox" id="snippet-always-quick-list" ${existingSnippet?.alwaysInQuickList ? 'checked' : ''} />
+                                <span>Always show in quick list</span>
+                            </label>
+                            <p class="snippet-field-hint">Show this snippet in the quick list regardless of category</p>
                         </div>
 
                         <div class="snippet-modal-field snippet-advanced-toggle">
@@ -2172,7 +2211,6 @@
             const categoryHint = overlay.querySelector('.snippet-category-hint');
             const dynamicSelectorCheckbox = overlay.querySelector('#snippet-dynamic-selector');
             const dynamicWarning = overlay.querySelector('.snippet-dynamic-warning');
-            const quickListOption = overlay.querySelector('.snippet-quick-list-option');
             const multiComponentCheckbox = overlay.querySelector('#snippet-multi-component');
             const singleCodeSection = overlay.querySelector('.snippet-single-code');
             const multiComponentSection = overlay.querySelector('.snippet-multi-component-section');
@@ -2238,7 +2276,6 @@
             dynamicSelectorCheckbox.addEventListener('change', () => {
                 const isDynamic = dynamicSelectorCheckbox.checked;
                 dynamicWarning.style.display = isDynamic ? 'block' : 'none';
-                quickListOption.style.display = isDynamic ? 'block' : 'none';
             });
 
             // "More Info" toggle for dynamic selector explanation
@@ -2291,7 +2328,7 @@
                 const selectedCat = overlay.querySelector('#snippet-category').value;
                 const customCat = overlay.querySelector('#snippet-custom-category').value.trim();
                 const dynamicSelector = overlay.querySelector('#snippet-dynamic-selector').checked;
-                const alwaysInQuickList = overlay.querySelector('input[name="snippet-quick-list"][value="always"]')?.checked || false;
+                const alwaysInQuickList = overlay.querySelector('#snippet-always-quick-list')?.checked || false;
                 const isMultiComponent = overlay.querySelector('#snippet-multi-component').checked;
 
                 // Use custom category name if "Custom" is selected, otherwise use the selected category
@@ -2451,6 +2488,7 @@
                     savedAt: new Date().toISOString(),
                     sourceSkinName: readResp.skinData.sourceSkinName,
                     sourceSkinID: readResp.skinData.sourceSkinID,
+                    sourceUrl: window.location.origin,
                     version: '1.1',
                     componentIndexes: readResp.skinData.componentIndexes,
                     components: readResp.skinData.components
@@ -3050,6 +3088,18 @@
                         showToast(sidebar, `Deleted "${snippet.name}"`);
                     }
                 }
+
+                // Delete All button
+                var deleteAllBtn = e.target.closest('.snippets-delete-all');
+                if (deleteAllBtn) {
+                    e.stopPropagation();
+                    if (!confirm('Delete ALL user snippets and copied skins? This cannot be undone.')) return;
+                    await saveUserSnippets({});
+                    await saveCopiedSkins({});
+                    await saveSnippetOrder([]);
+                    refreshSidebar();
+                    showToast(sidebar, 'All user data deleted');
+                }
             });
         }
 
@@ -3066,6 +3116,14 @@
             content.dataset.skinClickListenerAttached = 'true';
 
             content.addEventListener('click', async function(e) {
+                // Toggle collapse on header click
+                var header = e.target.closest('.copied-skins-header');
+                if (header) {
+                    var section = header.closest('.copied-skins-section');
+                    if (section) section.classList.toggle('collapsed');
+                    return;
+                }
+
                 var deleteBtn = e.target.closest('.copied-skin-delete-btn');
                 var skinItem = e.target.closest('.copied-skin-item');
                 var currentSkins = content._copiedSkinsRef;
@@ -3083,6 +3141,8 @@
                 }
 
                 if (skinItem) {
+                    // Don't open apply modal when clicking the source link
+                    if (e.target.closest('.copied-skin-source-link')) return;
                     e.stopPropagation();
                     var skinKey = skinItem.getAttribute('data-skin-key');
                     var skin = currentSkins[skinKey];
@@ -3196,6 +3256,14 @@
                             : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit';
                     });
 
+                    // Full page button — must go through service worker since content scripts
+                    // can't open chrome-extension:// URLs directly
+                    sidebar.querySelector('.snippets-sidebar-fullscreen').addEventListener('click', function() {
+                        if (chrome.runtime?.id) {
+                            chrome.runtime.sendMessage({ action: 'cp-open-extension-page', page: 'html/snippets.html' });
+                        }
+                    });
+
                     // Close button
                     sidebar.querySelector('.snippets-sidebar-close').addEventListener('click', function() {
                         closeSidebar();
@@ -3211,9 +3279,12 @@
             });
         }
 
-        // Close sidebar when clicking outside
+        // Close sidebar when clicking outside (but not when a modal is open)
         document.addEventListener('click', function(e) {
             if (sidebarElement && sidebarElement.classList.contains('open')) {
+                // Don't close if a modal is open (toolkit or CMS)
+                if (document.querySelector('.snippet-modal-overlay') ||
+                    e.target.closest('.modalContainerCP')) return;
                 if (!sidebarElement.contains(e.target)) {
                     closeSidebar();
                 }
@@ -3223,13 +3294,15 @@
         // ==================== INIT FOR EACH EDITOR ====================
 
         async function initSnippetsForEditor(codeToggle, codePopup, textarea) {
-            // Setup simple dropdown (left-click) - now async to load context snippets
+            // Setup simple dropdown (hover) and sidebar (click)
             codePopup.innerHTML = await buildDropdownHTML(textarea);
             codePopup.classList.add('css-snippet-dropdown');
 
-            codeToggle.addEventListener('click', async function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+            // Track hover state for both toggle and popup
+            let hoverTimeout = null;
+
+            async function showDropdown() {
+                clearTimeout(hoverTimeout);
 
                 // Close any other open dropdowns
                 document.querySelectorAll('.css-code-popup.visible').forEach(popup => {
@@ -3248,10 +3321,43 @@
                     codePopup.setAttribute('data-theme', theme);
                 }
 
-                codePopup.classList.toggle('visible');
+                codePopup.classList.add('visible');
+            }
+
+            function hideDropdown() {
+                hoverTimeout = setTimeout(() => {
+                    codePopup.classList.remove('visible');
+                }, 150);
+            }
+
+            // Hover on toggle button shows dropdown
+            codeToggle.addEventListener('mouseenter', function() {
+                showDropdown();
+            });
+            codeToggle.addEventListener('mouseleave', function() {
+                hideDropdown();
             });
 
-            // Setup sidebar (right-click)
+            // Keep dropdown open while hovering over it
+            codePopup.addEventListener('mouseenter', function() {
+                clearTimeout(hoverTimeout);
+            });
+            codePopup.addEventListener('mouseleave', function() {
+                hideDropdown();
+            });
+
+            // Click opens sidebar (both left and right click)
+            codeToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Close dropdown if open
+                codePopup.classList.remove('visible');
+
+                // Open sidebar
+                openSidebar(textarea);
+            });
+
             codeToggle.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -3272,24 +3378,6 @@
 
             // Handle snippet selection (dropdown)
             codePopup.addEventListener('click', async function(e) {
-                // Check for quick snippet (data-snippet-index)
-                const quickItem = e.target.closest('li[data-snippet-index]');
-                if (quickItem) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const snippetIndex = parseInt(quickItem.getAttribute('data-snippet-index'), 10);
-                    const snippet = QUICK_SNIPPETS[snippetIndex];
-
-                    if (snippet && snippet.template && textarea) {
-                        const processedCode = processQuickSnippet(snippet.template, textarea);
-                        insertCodeAtCursor(textarea, processedCode);
-                    }
-
-                    codePopup.classList.remove('visible');
-                    return;
-                }
-
                 // Check for library snippet (data-library-key)
                 const libraryItem = e.target.closest('li[data-library-key]');
                 if (libraryItem) {

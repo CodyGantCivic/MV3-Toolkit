@@ -1073,6 +1073,11 @@
       window.__CPToolkit_saveThemeWrapped = true;
 
       window.saveTheme = function () {
+        // If no pending touched skins, just call original directly — no monitoring needed
+        if (!window.__CPToolkit_pendingTouchedSkins || window.__CPToolkit_pendingTouchedSkins.length === 0) {
+          return origSave.apply(this, arguments);
+        }
+
         console.log('[CPToolkit] saveTheme() wrapper invoked — monitoring network activity for server-confirmed completion.');
 
         const trackedPromises = [];

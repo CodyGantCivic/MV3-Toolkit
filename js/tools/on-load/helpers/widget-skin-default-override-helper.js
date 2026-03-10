@@ -117,7 +117,7 @@
       });
 
       if (foundSkin) {
-        // Close modal, save theme, and reopen widget skins manager
+        // Close modal, save theme (which reopens the manage skins modal on its own)
         $(".modalClose").click();
 
         if (typeof window.saveTheme === 'function') {
@@ -129,11 +129,18 @@
           $(".widget[class*='skin-'] .remove.widgetSkin").click();
         }, 100);
 
-        // After 5 seconds, stop trying and reopen the manage dialog
         setTimeout(function() {
           clearInterval(clearSkin);
-          $("a:contains('Manage Widget Skins')").click();
         }, 5000);
+
+        // NOTE: Previously we reopened the manage dialog here after 5s,
+        // but saveTheme()'s completion callback already does that,
+        // causing the modal to open twice. Removed to fix double-modal bug.
+        // Original code:
+        //   setTimeout(function() {
+        //     clearInterval(clearSkin);
+        //     $("a:contains('Manage Widget Skins')").click();
+        //   }, 5000);
       }
     };
 

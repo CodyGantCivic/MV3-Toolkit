@@ -4,7 +4,7 @@
     "description": "Adds syntax highlighting, validation, themes, and line numbers to CSS textareas.",
     "enabled-by-default": true,
     "version-introduced": "1.14.0",
-    "help-text": "This tool adds a VS Code-like editing experience to CSS textareas in Theme Manager, Widget Manager, and Fancy Button Builder. Features include syntax highlighting with light/dark themes, CSS validation with error detection, line numbers, and character counting. Disable this if you prefer the plain textarea. Note: Core CSS functionality (.skinN replacement, text limits) is handled by the separate 'Widget Skin Advanced Style Helper' and 'Graphic Link Advanced Style Helper' tools."
+    "help-text": "Adds a VS Code-like editing experience to CSS textareas in Theme Manager, Widget Manager, and Fancy Button Builder. Features include syntax highlighting with light/dark themes, CSS validation with error detection, line numbers, character counting, and a CSS snippets library. Disable this if you prefer the plain textarea. Note: Core CSS functionality (.skinN replacement, text limits) is handled by the separate 'Widget Skin Advanced Style Helper' and 'Graphic Link Advanced Style Helper' tools."
   },
   "auto-dismiss-help-welcome": {
     "name": "Auto-dismiss Help and Welcome Messages",
@@ -18,7 +18,7 @@
     "description": "Allows you to Import Default Fancy Buttons.",
     "enabled-by-default": true,
     "version-introduced": "1.6.0",
-    "help-text": "Allows you to Import from a list of Default Fancy Buttons to the Graphic Links Module."
+    "help-text": "Import fancy buttons from a built-in template library, your saved custom buttons, or pasted JSON. Also includes Export JSON (copy, download, or save to your personal library) and a Socials tab for bulk-uploading social media icon graphic links (Black, White, or Color SVGs) to a Document Center folder."
   },
   "cp-MultipleCategoryUpload": {
     "name": "Multiple Category Upload",
@@ -53,7 +53,7 @@
     "description": "Enforce the 1000 character limit on widget skins and the 255 character limit on widget option sets.",
     "enabled-by-default": true,
     "version-introduced": "1.3.5",
-    "help-text": "This tool enforces the 1000 character limit on widget skins and the 255 character limit on widget option sets."
+    "help-text": "Enforces the 1000 character limit on widget skin advanced styles (MiscAdvStyles) and the 255 character limit on widget option sets."
   },
   "module-icons": {
     "name": "Favorite Module Icons",
@@ -103,7 +103,7 @@
     "description": "Automatically continue the current session when it is about to expire.",
     "enabled-by-default": true,
     "version-introduced": "1.0.0",
-    "help-text": "This tool automatically continues the current session when it is about to expire."
+    "help-text": "Automatically dismisses the Session Timeout modal and restarts the session timer. Also sends a server keep-alive ping every 5 minutes to prevent the ASP.NET session from expiring independently. A badge counter on the extension icon shows how many times the session was auto-refreshed."
   },
   "quick-link-autofill": {
     "name": "Quick Link Autofill",
@@ -117,7 +117,7 @@
     "description": "Automatically opens the last-opened folder in the image picker modal.",
     "enabled-by-default": true,
     "version-introduced": "1.5.5",
-    "help-text": "This tool automatically opens the last-opened folder in the image picker modal."
+    "help-text": "Automatically opens the last-opened folder in the image picker modal, so you don't have to navigate to it every time. Ignores hidden iframes used by other toolkit tools."
   },
   "show-changelog": {
     "name": "Show Changelog",
@@ -156,7 +156,7 @@
     "description": "Changes the default widget skin settings.",
     "enabled-by-default": true,
     "version-introduced": "1.5.1",
-    "help-text": "This tool changes the default widget skin settings."
+    "help-text": "When creating a new widget skin, prompts you to override the default settings with more sensible values (e.g., Wrapper FontSize null, TextAlignment 0, Tab padding). Only applies to 'Create Skin', not 'Copy Skin'. Automatically saves the theme after applying overrides."
   },
   "xml-change-alerts": {
     "name": "XML Major Change Alert",
@@ -170,6 +170,13 @@
     "description": "Automatically fixes CSS skin ID references when copying widget skins.",
     "enabled-by-default": true,
     "version-introduced": "1.0.2",
-    "help-text": "When you copy a widget skin using the CMS 'Copy Widget Skin' feature, the MiscellaneousStyles may contain references to the source skin ID instead of the new skin ID. This tool automatically detects skin copies and updates the CSS references after the new skin gets its ID from the server. A notification will appear when references are fixed, prompting you to save again."
+    "help-text": "When you copy a widget skin, the advanced styles (MiscellaneousStyles) may still reference the source skin's ID (e.g., .widget.skin101) instead of the new skin's ID. This tool automatically detects copies and updates the CSS references after the new skin gets its ID from the server. A notification will appear when references are fixed, prompting you to save again."
+  },
+  "adfs": {
+    "name": "ADFS / SSO Bypass",
+    "description": "Bypasses SAML/ADFS login redirects so you can use the standard CivicPlus login.",
+    "enabled-by-default": true,
+    "version-introduced": "1.0.0",
+    "help-text": "Some client sites use a corporate identity provider (ADFS, Entra ID, Okta) for admin login via SAML. This redirects the login page to the client's SSO, which CivicPlus employees can't authenticate against. This tool detects SAML login redirects and bypasses them to the standard CivicPlus login page (/Admin/?saml=off). It also auto-follows ADFS redirects on the CivicPlus identity server."
   }
 }

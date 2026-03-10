@@ -49,7 +49,7 @@
               var applyWidgetMaxlength = function() {
                 var miscAdvStyles = $("#MiscAdvStyles");
                 if (miscAdvStyles.length && !miscAdvStyles.attr("maxlength")) {
-                  miscAdvStyles.attr("maxlength", 255);
+                  miscAdvStyles.attr("maxlength", 1000);
                   // console.log("[CP Toolkit](" + thisTool + ") Applied maxlength to MiscAdvStyles");
                 }
               };

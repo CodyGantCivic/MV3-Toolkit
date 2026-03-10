@@ -54,7 +54,15 @@ async function detect_if_cp_site(callback) {
     if (!chrome.runtime?.id) return;
 
     if (isCPsite) {
-      callback();
+      // Content scripts run at document_start — wait for body to exist
+      // before calling tools that may need DOM access (MutationObservers, etc.)
+      if (document.body) {
+        callback();
+      } else {
+        document.addEventListener("DOMContentLoaded", function () {
+          if (chrome.runtime?.id) callback();
+        });
+      }
     }
   } catch (err) {
     // Silently ignore "Extension context invalidated" errors (extension was reloaded)

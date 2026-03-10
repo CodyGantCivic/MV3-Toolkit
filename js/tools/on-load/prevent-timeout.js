@@ -3,18 +3,32 @@
   chrome.storage.local.get(thisTool, function(settings) {
     detect_if_cp_site(function() {
       if (settings[thisTool] !== false) {
-        // console.log("[CP Toolkit] Loading " + thisTool);
         try {
           function checkForTimeoutAndPrevent() {
+            // Check for the popover modal (Session Timeout dialog)
+            var $modal = $("#popoverModal");
+            if (
+              $modal.is(":visible") &&
+              $modal.find(".cp-PopOver-title").text().trim() ===
+                "Session Timeout"
+            ) {
+              $modal.find("#cpPopOverFooter .cp-Btn--primary").click();
+              console.log(
+                "[CP Toolkit](" + thisTool + ") Login timeout prevented! (modal)",
+              );
+              return;
+            }
+
+            // Fallback: check for the older inline UI message
             if (
               $(".cp-UIMessage-text")
                 .text()
                 .startsWith("You will be signed out in")
             ) {
-              $(".cp-UIMessage-text")
-                .find(".cp-Btn")
-                .click();
-              console.log("[CP Toolkit](" + thisTool + ") Login timeout prevented!");
+              $(".cp-UIMessage-text").find(".cp-Btn").click();
+              console.log(
+                "[CP Toolkit](" + thisTool + ") Login timeout prevented!",
+              );
             }
           }
 
@@ -23,7 +37,7 @@
           // so this fires reliably even when the tab has been hidden for 30+ minutes.
           if (chrome.runtime?.id) {
             chrome.runtime.onMessage.addListener(function(message) {
-              if (message && message.action === 'cp-check-timeout') {
+              if (message && message.action === "cp-check-timeout") {
                 checkForTimeoutAndPrevent();
               }
             });
@@ -31,9 +45,11 @@
 
           // Also keep the setInterval as a backup for foreground tabs.
           // This catches the dialog faster when the tab is actively visible.
-          setInterval(checkForTimeoutAndPrevent, 2 * 1000 * 60);
+          setInterval(checkForTimeoutAndPrevent, 2 * 60 * 1000);
+
+          console.log("[CP Toolkit] Loaded " + thisTool);
         } catch (err) {
-          console.warn(err);
+          console.warn("[CP Toolkit](" + thisTool + ") error:", err);
         }
       }
     });

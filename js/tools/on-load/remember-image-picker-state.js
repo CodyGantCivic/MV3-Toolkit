@@ -14,6 +14,17 @@
 (function loadTool() {
   var thisTool = "remember-image-picker-state";
 
+  // Skip hidden iframes created by the toolkit (folder lookup, upload flow)
+  try {
+    if (window.frameElement) {
+      var frameStyle = window.frameElement.style;
+      if (frameStyle && (parseInt(frameStyle.left) < -999 || parseInt(frameStyle.top) < -999 ||
+          frameStyle.opacity === '0' || parseInt(frameStyle.width) <= 1)) {
+        return;
+      }
+    }
+  } catch (e) { /* cross-origin, safe to continue */ }
+
   var isImagePickerFrame =
     window.location.pathname
       .toLowerCase()
@@ -125,19 +136,9 @@
   function dispatchClick(target) {
     try {
       if (!target) return;
-      // native click
-      target.click && target.click();
-      // synthetic mouse events (cover edge cases)
-      var ev = new MouseEvent("click", {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-      });
-      target.dispatchEvent(ev);
-      // jQuery click if available
-      try {
-        (window.jQuery || window.$)(target).trigger("click");
-      } catch (e) {}
+      // Fire a single click only — multiple clicks cause Ant Design to toggle
+      // selection off, leaving React state desynced from the visual state.
+      target.click();
     } catch (e) {
       console.warn("[CP Toolkit](" + thisTool + ") dispatchClick error:", e);
     }
@@ -450,6 +451,7 @@
 
           if (folderNode) {
             found = true;
+            var isLast = idx === path.length - 1;
             console.log(
               "[CP Toolkit](" +
                 thisTool +
@@ -457,21 +459,15 @@
                 folderName +
                 "' (index " +
                 idx +
+                ", " + (isLast ? "final" : "intermediate") +
                 ") attempt " +
                 attempts,
             );
 
-            // click the content wrapper to select
-            var contentWrapper = folderNode.querySelector(
-              ".ant-tree-node-content-wrapper",
-            );
-            if (contentWrapper) {
-              dispatchClick(contentWrapper);
-            }
-
-            // If not the last folder, ensure it's expanded
-            var isLast = idx === path.length - 1;
             if (!isLast) {
+              // Intermediate folder: only expand, do NOT select.
+              // Selecting intermediate folders triggers React state changes
+              // and folder content loads that can race with the final selection.
               var switcher = folderNode.querySelector(".ant-tree-switcher");
               var isExpanded =
                 folderNode.classList.contains(
@@ -515,9 +511,17 @@
                 } catch (e) {}
               }
             } else {
-              // Last folder: ensure selection applied — wait for selected class
+              // Final folder: select it with a single click
+              var contentWrapper = folderNode.querySelector(
+                ".ant-tree-node-content-wrapper",
+              );
+              if (contentWrapper) {
+                dispatchClick(contentWrapper);
+              }
+
+              // Wait for React to process the selection and load folder contents
               var selectedOk = false;
-              for (var poll = 0; poll < 6; poll++) {
+              for (var poll = 0; poll < 10; poll++) {
                 var sel = document.querySelector(
                   ".ant-tree-treenode-selected .ant-tree-title",
                 );
@@ -528,12 +532,14 @@
                 await sleep(120);
               }
               if (!selectedOk) {
-                // Try one more native click to ensure selection
+                // Try one more click to ensure selection
                 if (contentWrapper) {
                   dispatchClick(contentWrapper);
                 }
-                await sleep(150);
+                await sleep(200);
               }
+              // Extra pause for React to finish loading the folder's contents
+              await sleep(300);
             }
           } else {
             // Not found yet — small delay and retry

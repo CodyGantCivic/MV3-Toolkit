@@ -81,11 +81,19 @@
   "/privacy": ["Privacy Policy", "Privacy"],
   "/sitemap": ["Sitemap", "Site Map"],
   "/": ["Home", "Homepage", "Example", "Example Item"],
+  "/bluesky": ["Bluesky", "Bluesky1", "Bluesky 1"],
+  "/everbridge": ["Everbridge", "Everbridge1", "Everbridge 1"],
   "/facebook": ["Facebook", "Facebook1", "Facebook 1"],
-  "/x": ["X", "X1", "X 1"],
+  "/flickr": ["Flickr", "Flickr1", "Flickr 1"],
   "/instagram": ["Instagram", "Instagram1", "Instagram 1"],
-  "/youtube": ["YouTube", "YouTube1", "YouTube 1"],
   "/linkedin": ["LinkedIn", "LinkedIn1", "LinkedIn 1"],
+  "/mastodon": ["Mastodon", "Mastodon1", "Mastodon 1"],
+  "/nextdoor": ["Nextdoor", "Nextdoor1", "Nextdoor 1"],
   "/pinterest": ["Pinterest", "Pinterest1", "Pinterest 1"],
-  "/vimeo": ["Vimeo", "Vimeo1", "Vimeo 1"]
+  "/rss": ["RSS", "RSS1", "RSS 1", "RSS Feed"],
+  "/threads": ["Threads", "Threads1", "Threads 1"],
+  "/tiktok": ["TikTok", "TikTok1", "TikTok 1"],
+  "/vimeo": ["Vimeo", "Vimeo1", "Vimeo 1"],
+  "/x": ["X", "X1", "X 1"],
+  "/youtube": ["YouTube", "YouTube1", "YouTube 1"]
 }
