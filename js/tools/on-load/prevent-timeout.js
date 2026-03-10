@@ -44,8 +44,8 @@
           }
 
           // Also keep the setInterval as a backup for foreground tabs.
-          // This catches the dialog faster when the tab is actively visible.
-          setInterval(checkForTimeoutAndPrevent, 2 * 60 * 1000);
+          // Checks every 15 seconds to catch the 60-second countdown in time.
+          setInterval(checkForTimeoutAndPrevent, 15 * 1000);
 
           console.log("[CP Toolkit] Loaded " + thisTool);
         } catch (err) {
