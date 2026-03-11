@@ -25,12 +25,14 @@
       "all_frames": true,
       "js": [
         "js/detect_cp_site.js",
+        "js/content/instrument-bridge.js",
         "js/external/jquery-3.3.1.min.js",
         "js/tools/on-load/title-changer.js",
         "js/tools/on-load/keyboard-shortcuts.js",
         "js/tools/on-load/auto-dismiss-help-welcome.js",
         "js/tools/on-load/enforce-advanced-styles-text-limits.js",
         "js/tools/on-load/theme-manager-enhancer.js",
+        "js/tools/on-load/theme-manager-skin-organizer.js",
         "js/tools/on-load/widget-skin-default-override.js",
         "js/tools/on-load/module-icons.js",
         "js/tools/on-load/cp-MultipleCategoryUpload.js",
@@ -40,12 +42,14 @@
         "js/tools/on-load/graphic-link-advanced-style-helper.js",
         "js/tools/on-load/css-snippets.js",
         "js/tools/on-load/mini-ide.js",
+        "js/tools/on-load/custom-css-deployer.js",
         "js/tools/on-load/prevent-timeout.js",
         "js/tools/on-load/graphic-link-autofill.js",
         "js/tools/on-load/quick-link-autofill.js",
         "js/tools/on-load/input-focus.js",
         "js/tools/on-load/xml-change-alerts.js",
         "js/tools/on-load/download-xml-css.js",
+        "js/tools/on-load/layout-manager-sorter.js",
         "js/tools/on-load/cp-ImportFancyButton.js",
         "js/tools/on-load/remember-image-picker-state.js",
         "js/tools/on-load/fix-copied-skin-references.js",
@@ -61,7 +65,8 @@
     "contextMenus",
     "scripting",
     "alarms",
-    "webNavigation"
+    "webNavigation",
+    "webRequest"
   ],
   "host_permissions": [
     "*://*/*"
@@ -74,6 +79,7 @@
         "js/tools/on-demand/*",
         "js/tools/on-load/helpers/*",
         "socials/*",
+        "css/custom-css-deployments.css",
         "css/external/fontawesome-all.min.css",
         "css/external/fontawesome-fonts/*"
       ],

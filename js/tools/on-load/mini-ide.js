@@ -18,6 +18,21 @@
     const THEMES = ['light', 'dark', 'no-styles'];
     const THEME_STORAGE_KEY = 'css-editor-theme';
     const DEFAULT_THEME = 'light';
+    const PSEUDO_MODE_STORAGE_KEY = 'theme-manager-enhancer-pseudo-mode';
+    const PSEUDO_MODE_DEFAULT = 'legacy-fix';
+    const PSEUDO_MODES = ['legacy-fix', 'cms-default', 'off'];
+    const PSEUDO_MODE_LABELS = {
+        'legacy-fix': 'Safe layout bounds',
+        'cms-default': 'CMS default bounds',
+        'off': 'Override off'
+    };
+    const PSEUDO_MODE_SHORT_LABELS = {
+        'legacy-fix': '::0',
+        'cms-default': '::-2',
+        'off': '::x'
+    };
+    let pseudoModeCache = null;
+    let pseudoModeStorageListenerBound = false;
 
     /**
      * Get saved theme from localStorage or return default
@@ -117,6 +132,123 @@
         return patterns.some(pattern => {
             const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
             return regex.test(url) || regex.test(pathname);
+        });
+    }
+
+    function isThemeManagerPage() {
+        return pageMatches(['/designcenter/themes/']);
+    }
+
+    function sanitizePseudoMode(mode) {
+        return PSEUDO_MODES.includes(mode) ? mode : PSEUDO_MODE_DEFAULT;
+    }
+
+    function getNextPseudoMode(mode) {
+        const normalizedMode = sanitizePseudoMode(mode);
+        const currentIndex = PSEUDO_MODES.indexOf(normalizedMode);
+        const nextIndex = (currentIndex + 1) % PSEUDO_MODES.length;
+        return PSEUDO_MODES[nextIndex];
+    }
+
+    function applyPseudoModeToButton(button, mode) {
+        if (!button) return;
+
+        const normalizedMode = sanitizePseudoMode(mode);
+        const modeLabel = PSEUDO_MODE_LABELS[normalizedMode] || PSEUDO_MODE_LABELS[PSEUDO_MODE_DEFAULT];
+        const shortLabel = PSEUDO_MODE_SHORT_LABELS[normalizedMode] || PSEUDO_MODE_SHORT_LABELS[PSEUDO_MODE_DEFAULT];
+        const labelNode = button.querySelector('.pseudo-label');
+
+        button.setAttribute('data-mode', normalizedMode);
+        button.setAttribute('title', 'Pseudo override: ' + modeLabel + ' (click to cycle)');
+        button.setAttribute('aria-label', 'Pseudo override: ' + modeLabel + '. Click to cycle.');
+
+        if (labelNode) {
+            labelNode.textContent = shortLabel;
+        }
+    }
+
+    function updateAllPseudoModeButtons(mode) {
+        document.querySelectorAll('.css-pseudo-toggle').forEach((button) => {
+            applyPseudoModeToButton(button, mode);
+        });
+    }
+
+    function bindPseudoModeStorageListener() {
+        if (pseudoModeStorageListenerBound || !chrome.storage || !chrome.storage.onChanged) {
+            return;
+        }
+
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName !== 'local' || !changes[PSEUDO_MODE_STORAGE_KEY]) {
+                return;
+            }
+
+            pseudoModeCache = sanitizePseudoMode(changes[PSEUDO_MODE_STORAGE_KEY].newValue);
+            updateAllPseudoModeButtons(pseudoModeCache);
+        });
+
+        pseudoModeStorageListenerBound = true;
+    }
+
+    function readPseudoModeFromStorage(callback) {
+        if (!chrome.storage || !chrome.storage.local) {
+            callback(PSEUDO_MODE_DEFAULT);
+            return;
+        }
+
+        chrome.storage.local.get(PSEUDO_MODE_STORAGE_KEY, (settings) => {
+            if (chrome.runtime.lastError) {
+                console.warn(TOOLKIT_NAME + ' Failed to read pseudo mode:', chrome.runtime.lastError);
+                callback(PSEUDO_MODE_DEFAULT);
+                return;
+            }
+
+            callback(sanitizePseudoMode(settings[PSEUDO_MODE_STORAGE_KEY]));
+        });
+    }
+
+    function initializePseudoToggle(button) {
+        if (!button || !isThemeManagerPage()) {
+            return;
+        }
+
+        bindPseudoModeStorageListener();
+
+        const applyMode = (mode) => {
+            pseudoModeCache = sanitizePseudoMode(mode);
+            updateAllPseudoModeButtons(pseudoModeCache);
+        };
+
+        if (pseudoModeCache) {
+            applyMode(pseudoModeCache);
+        } else {
+            readPseudoModeFromStorage(applyMode);
+        }
+
+        const cyclePseudoMode = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const currentMode = sanitizePseudoMode(button.getAttribute('data-mode') || pseudoModeCache || PSEUDO_MODE_DEFAULT);
+            const nextMode = getNextPseudoMode(currentMode);
+            const settings = {};
+
+            pseudoModeCache = nextMode;
+            updateAllPseudoModeButtons(nextMode);
+            settings[PSEUDO_MODE_STORAGE_KEY] = nextMode;
+
+            chrome.storage.local.set(settings, () => {
+                if (chrome.runtime.lastError) {
+                    console.warn(TOOLKIT_NAME + ' Failed to save pseudo mode:', chrome.runtime.lastError);
+                }
+            });
+        };
+
+        button.addEventListener('click', cyclePseudoMode);
+        button.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                cyclePseudoMode(event);
+            }
         });
     }
 
@@ -320,9 +452,10 @@
             }
             */
 
-            /* ==================== PHASE 3: THEME TOGGLE BUTTON & CODE TOGGLE ==================== */
+            /* ==================== PHASE 3: THEME / PSEUDO / SNIPPET TOGGLES ==================== */
             .css-validation-indicator .css-theme-toggle,
-            .css-validation-indicator .css-code-toggle {
+            .css-validation-indicator .css-code-toggle,
+            .css-validation-indicator .css-pseudo-toggle {
                 flex: 0 0 auto;
                 margin-left: 8px;
                 /* Override CivicPlus admin button styles */
@@ -353,13 +486,15 @@
                 text-align: center !important;
             }
             .css-validation-indicator .css-theme-toggle:hover,
-            .css-validation-indicator .css-code-toggle:hover {
+            .css-validation-indicator .css-code-toggle:hover,
+            .css-validation-indicator .css-pseudo-toggle:hover {
                 background: rgba(0, 0, 0, 0.05) !important;
                 border-color: #999 !important;
                 opacity: 1 !important; /* Prevent .button hover opacity changes */
             }
             .css-validation-indicator .css-theme-toggle:focus,
-            .css-validation-indicator .css-code-toggle:focus {
+            .css-validation-indicator .css-code-toggle:focus,
+            .css-validation-indicator .css-pseudo-toggle:focus {
                 outline: 2px solid #0078d4 !important;
                 outline-offset: 2px !important;
             }
@@ -376,6 +511,24 @@
             }
             .css-validation-indicator .css-theme-toggle svg {
                 stroke: #b8860b !important; /* Dark yellow for theme toggle (light theme) */
+            }
+            .css-validation-indicator .css-pseudo-toggle .pseudo-label {
+                display: inline-block;
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 10px;
+                font-weight: 700;
+                line-height: 1;
+                letter-spacing: 0.1px;
+                color: #555;
+            }
+            .css-validation-indicator .css-pseudo-toggle[data-mode="legacy-fix"] .pseudo-label {
+                color: #2f7a47;
+            }
+            .css-validation-indicator .css-pseudo-toggle[data-mode="cms-default"] .pseudo-label {
+                color: #8f6a00;
+            }
+            .css-validation-indicator .css-pseudo-toggle[data-mode="off"] .pseudo-label {
+                color: #7a3b3b;
             }
 
             /* ==================== CODE SNIPPETS DROPDOWN ==================== */
@@ -475,6 +628,10 @@
             .css-editor-wrapper.theme-light .css-code-toggle svg {
                 stroke: #555 !important;
             }
+            .css-editor-wrapper[data-theme="light"] .css-pseudo-toggle .pseudo-label,
+            .css-editor-wrapper.theme-light .css-pseudo-toggle .pseudo-label {
+                color: #555;
+            }
             .css-editor-wrapper[data-theme="light"] .css-validation-indicator,
             .css-editor-wrapper.theme-light .css-validation-indicator {
                 background: #f3f3f3;
@@ -513,13 +670,17 @@
             .css-editor-wrapper[data-theme="dark"] .css-theme-toggle,
             .css-editor-wrapper.theme-dark .css-theme-toggle,
             .css-editor-wrapper[data-theme="dark"] .css-code-toggle,
-            .css-editor-wrapper.theme-dark .css-code-toggle {
+            .css-editor-wrapper.theme-dark .css-code-toggle,
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle,
+            .css-editor-wrapper.theme-dark .css-pseudo-toggle {
                 border-color: #555;
             }
             .css-editor-wrapper[data-theme="dark"] .css-theme-toggle:hover,
             .css-editor-wrapper.theme-dark .css-theme-toggle:hover,
             .css-editor-wrapper[data-theme="dark"] .css-code-toggle:hover,
-            .css-editor-wrapper.theme-dark .css-code-toggle:hover {
+            .css-editor-wrapper.theme-dark .css-code-toggle:hover,
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle:hover,
+            .css-editor-wrapper.theme-dark .css-pseudo-toggle:hover {
                 background: rgba(255, 255, 255, 0.1);
                 border-color: #777;
             }
@@ -530,6 +691,19 @@
             .css-editor-wrapper[data-theme="dark"] .css-code-toggle svg,
             .css-editor-wrapper.theme-dark .css-code-toggle svg {
                 stroke: #d4d4d4 !important;
+            }
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle .pseudo-label,
+            .css-editor-wrapper.theme-dark .css-pseudo-toggle .pseudo-label {
+                color: #d4d4d4;
+            }
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle[data-mode="legacy-fix"] .pseudo-label {
+                color: #7ee787;
+            }
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle[data-mode="cms-default"] .pseudo-label {
+                color: #f2cc60;
+            }
+            .css-editor-wrapper[data-theme="dark"] .css-pseudo-toggle[data-mode="off"] .pseudo-label {
+                color: #ff8a8a;
             }
             .css-code-popup[data-theme="dark"] {
                 background: #2d2d2d;
@@ -641,6 +815,10 @@
             .css-editor-wrapper[data-theme="no-styles"] .css-code-toggle svg,
             .css-editor-wrapper.theme-no-styles .css-code-toggle svg {
                 stroke: #333 !important;
+            }
+            .css-editor-wrapper[data-theme="no-styles"] .css-pseudo-toggle .pseudo-label,
+            .css-editor-wrapper.theme-no-styles .css-pseudo-toggle .pseudo-label {
+                color: #333;
             }
             .css-editor-wrapper[data-theme="no-styles"] .css-validation-indicator,
             .css-editor-wrapper.theme-no-styles .css-validation-indicator {
@@ -3266,6 +3444,15 @@
         const validationIndicator = document.createElement('div');
         validationIndicator.className = 'css-validation-indicator valid';
 
+        const showPseudoToggle = isThemeManagerPage();
+        const pseudoToggleMarkup = showPseudoToggle
+            ? `
+            <button class="css-pseudo-toggle" title="Pseudo override" aria-label="Pseudo override" type="button" data-mode="legacy-fix">
+                <span class="pseudo-label">::0</span>
+            </button>
+            `
+            : '';
+
         // Build validation indicator with theme toggle INSIDE (no selector hint)
         validationIndicator.innerHTML = `
             <div class="css-validation-status">
@@ -3286,6 +3473,7 @@
                     <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                 </svg>
             </button>
+            ${pseudoToggleMarkup}
             <div class="css-snippet-wrapper" style="position: relative;">
                 <button class="css-code-toggle" title="CSS Snippets" aria-label="CSS Snippets" type="button">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3311,6 +3499,12 @@
                 cycleTheme();
             }
         });
+
+        // Initialize pseudo override toggle (Theme Manager only)
+        const pseudoToggle = validationIndicator.querySelector('.css-pseudo-toggle');
+        if (pseudoToggle) {
+            initializePseudoToggle(pseudoToggle);
+        }
 
         // Initialize CSS Snippets (handled by css-snippets.js)
         const snippetWrapper = validationIndicator.querySelector('.css-snippet-wrapper');
@@ -4080,7 +4274,9 @@
             // Check if wrapper exists AND is properly initialized (has theme toggle button)
             const wrapper = textarea.closest('.css-editor-wrapper');
             const hasThemeToggle = !!(wrapper && wrapper.querySelector('.css-theme-toggle'));
-            const isProperlyEnhanced = isWrapped && hasThemeToggle;
+            const hasPseudoToggle = !!(wrapper && wrapper.querySelector('.css-pseudo-toggle'));
+            const requiresPseudoToggle = isThemeManagerPage();
+            const isProperlyEnhanced = isWrapped && hasThemeToggle && (!requiresPseudoToggle || hasPseudoToggle);
 
             // Phase 3: Commented out verbose debug logging
             // if (textarea.id && textarea.id.includes('fancyButton')) {
@@ -4137,8 +4333,10 @@
                             textareas.forEach(textarea => {
                                 const wrapper = textarea.closest('.css-editor-wrapper');
                                 const hasThemeToggle = !!(wrapper?.querySelector('.css-theme-toggle'));
+                                const hasPseudoToggle = !!(wrapper?.querySelector('.css-pseudo-toggle'));
+                                const requiresPseudoToggle = isThemeManagerPage();
                                 
-                                if (wrapper && hasThemeToggle) {
+                                if (wrapper && hasThemeToggle && (!requiresPseudoToggle || hasPseudoToggle)) {
                                     // Test if event listeners are actually working
                                     let listenerWorks = false;
                                     const testHandler = () => { listenerWorks = true; };

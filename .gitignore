@@ -1,0 +1,17 @@
+# MCP Capture Server
+server/
+scrub.js
+
+# Node
+node_modules/
+
+# Codex
+CODEX.md
+.codex/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+*.code-workspace
