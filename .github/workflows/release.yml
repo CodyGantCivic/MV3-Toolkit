@@ -33,13 +33,14 @@ jobs:
       - name: Read manifest version
         id: manifest
         run: |
-          MANIFEST_VER=$(grep '"version"' manifest.json | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
+          MANIFEST_VER=$(grep '"version"' mv3-extension/manifest.json | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
           echo "manifest_version=$MANIFEST_VER" >> "$GITHUB_OUTPUT"
           echo "Manifest version: $MANIFEST_VER"
 
       - name: Package extension
         run: |
-          zip -r mv3-toolkit.zip \
+          cd mv3-extension
+          zip -r ../mv3-toolkit.zip \
             manifest.json \
             css/ \
             data/ \
@@ -48,6 +49,7 @@ jobs:
             js/ \
             socials/ \
             -x "*.backup"
+          cd ..
           echo "Packaged: mv3-toolkit.zip ($(du -h mv3-toolkit.zip | cut -f1))"
 
       - name: Create GitHub Release
