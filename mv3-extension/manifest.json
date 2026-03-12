@@ -69,9 +69,7 @@
     "webNavigation",
     "webRequest"
   ],
-  "host_permissions": [
-    "*://*/*"
-  ],
+  "host_permissions": ["*://*/*"],
   "web_accessible_resources": [
     {
       "resources": [
